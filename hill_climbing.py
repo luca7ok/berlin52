@@ -1,6 +1,5 @@
 import random
 import sys
-
 import pygame
 
 pygame.init()
@@ -40,9 +39,9 @@ def distance(p1, p2):
 def total_distance(route):
     dist = 0
     for i in range(len(route) - 1):
-        start = points[route[i]]
-        end = points[route[(i + 1)]]
-        dist = round(dist + distance(start, end), 2)
+        p1 = points[route[i]]
+        p2 = points[route[(i + 1)]]
+        dist = round(dist + distance(p1, p2), 2)
     dist += distance(points[route[0]], points[route[-1]])
     return dist
 
