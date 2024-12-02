@@ -4,11 +4,10 @@ import pygame
 from rgb_gradient import get_linear_gradient
 
 pygame.init()
-pygame.font.init()
 
 WIDTH, HEIGHT = 1900, 1200
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Berlin 52 Hill Climbing")
+pygame.display.set_caption("Berlin 52 TABU Search")
 
 font = pygame.font.Font(None, 48)
 
@@ -48,35 +47,55 @@ def total_distance(route):
 
 
 def generate_neighbors(route):
-    new_route = route[:]
-    i, j = random.sample(range(len(route)), 2)
-    new_route[i], new_route[j] = new_route[j], new_route[i]
-    return new_route
+    neighbours = []
+    for i in range(len(route)):
+        for j in range(i + 1, len(route)):
+            new_route = route[:]
+            new_route[i], new_route[j] = new_route[j], new_route[i]
+            neighbours.append(new_route)
+    return neighbours
 
 
-def hill_climbing():
+def tabu_search(max_iterations, tabu_size):
     current_route = list(range(len(points)))
     random.shuffle(current_route)
     current_distance = total_distance(current_route)
-    while True:
-        neighbour_route = generate_neighbors(current_route)
-        neighbour_distance = total_distance(neighbour_route)
-        if neighbour_distance < current_distance:
-            current_route = neighbour_route
-            current_distance = neighbour_distance
-        else:
+
+    tabu_list = []
+    best_route = current_route[:]
+    best_distance = current_distance
+
+    for iteration in range(max_iterations):
+        neighbours = generate_neighbors(current_route)
+        neighbours = [n for n in neighbours if n not in tabu_list]
+        if not neighbours:
             break
-    return current_distance, current_route
+
+        best_neighbour = min(neighbours, key=total_distance)
+        best_neighbour_distance = total_distance(best_neighbour)
+
+        if best_neighbour_distance < best_distance:
+            best_route = best_neighbour[:]
+            best_distance = best_neighbour_distance
+
+        current_route = best_neighbour[:]
+        current_distance = best_neighbour_distance
+
+        tabu_list.append(current_route[:])
+        if len(tabu_list) > tabu_size:
+            tabu_list.pop(0)
+        return best_distance, best_route
 
 
 def to_screen_coordinates(x, y):
     x_screen = chart_origin[0] + (x / x_max) * chart_width
     y_screen = chart_origin[1] - (y / y_max) * chart_height
-    return int(x_screen), int(y_screen)
+    return float(x_screen), float(y_screen)
+
 
 
 running = True
-best_distance, best_route = hill_climbing()
+best_distance, best_route = tabu_search(100000, 100)
 
 while running:
     for event in pygame.event.get():
@@ -85,6 +104,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 running = False
+
     screen.fill(BLACK)
 
     pygame.draw.line(screen, WHITE, chart_origin, (chart_origin[0], chart_origin[1] - chart_height), 2)
