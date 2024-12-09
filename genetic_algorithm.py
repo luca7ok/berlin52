@@ -2,10 +2,23 @@ import random
 import sys
 import pygame
 from rgb_gradient import get_linear_gradient
+import os
+from dotenv import load_dotenv
 
 pygame.init()
+pygame.font.init()
+load_dotenv()
 
-WIDTH, HEIGHT = 1900, 1200
+WIDTH = int(os.getenv('WIDTH'))
+HEIGHT = int(os.getenv('HEIGHT'))
+chart_width = int(os.getenv('CHART_WIDTH'))
+chart_height = int(os.getenv('CHART_HEIGHT'))
+CHART_ORIGIN_X = int(os.getenv('CHART_ORIGIN_X'))
+CHART_ORIGIN_Y = int(os.getenv('CHART_ORIGIN_Y'))
+chart_origin = (CHART_ORIGIN_X, CHART_ORIGIN_Y)
+CHART_DISTANCE_X = int(os.getenv('CHART_DISTANCE_X'))
+CHART_DISTANCE_Y = int(os.getenv('CHART_DISTANCE_Y'))
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Berlin 52 TABU Search")
 
@@ -23,10 +36,6 @@ with open('input.txt') as file:
 
 for line in lines:
     points.append((float(line.split()[1]), float(line.split()[2])))
-
-chart_origin = (100, 1000)
-chart_width = 1700
-chart_height = 900
 
 x_max = max(x for x, y in points)
 y_max = max(y for x, y in points)
@@ -119,7 +128,7 @@ def to_screen_coordinates(x, y):
 
 
 running = True
-best_distance, best_route = genetic_algorithm(100,500)
+best_distance, best_route = genetic_algorithm(100, 500)
 
 while running:
     for event in pygame.event.get():
@@ -151,7 +160,7 @@ while running:
     pygame.draw.line(screen, gradient[51], p1, p2, 1)
 
     distance_text = font.render(f'Distance: {round(best_distance, 2)}', False, WHITE)
-    screen.blit(distance_text, (100, 1100))
+    screen.blit(distance_text, (CHART_DISTANCE_X, CHART_DISTANCE_Y))
 
     pygame.display.flip()
 
