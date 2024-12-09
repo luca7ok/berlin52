@@ -4,6 +4,7 @@ import pygame
 from rgb_gradient import get_linear_gradient
 import os
 from dotenv import load_dotenv
+import time
 
 pygame.init()
 pygame.font.init()
@@ -23,6 +24,8 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Berlin 52 TABU Search")
 
 font = pygame.font.Font(None, 48)
+
+start_time = time.time()
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -125,6 +128,7 @@ def to_screen_coordinates(x, y):
 
 running = True
 best_distance, best_route = ant_colony_optimization()
+time_text = None
 
 while running:
     for event in pygame.event.get():
@@ -157,6 +161,9 @@ while running:
 
     distance_text = font.render(f'Distance: {round(best_distance, 2)}', False, WHITE)
     screen.blit(distance_text, (CHART_DISTANCE_X, CHART_DISTANCE_Y))
+    if time_text is None:
+        time_text = font.render(f'Time: {round(time.time() - start_time, 2)}', False, WHITE)
+    screen.blit(time_text, (CHART_DISTANCE_X + 300, CHART_DISTANCE_Y))
 
     pygame.display.flip()
 

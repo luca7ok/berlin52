@@ -28,6 +28,8 @@ font = pygame.font.Font(None, 48)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+PINK = (255, 20, 147)
+
 intermediate_colors = [(255, 0, 0), (255, 165, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (138, 43, 226)]
 gradient = get_linear_gradient(colors=intermediate_colors, nb_colors=52, return_format='rgb')
 
@@ -107,6 +109,7 @@ def to_screen_coordinates(x, y):
 
 running = True
 best_distance, best_route = simulated_annealing(1000, 0.99, 10000)
+prioritized_cities = random.sample(range(0, 52), 4)
 
 while running:
     for event in pygame.event.get():
@@ -127,6 +130,9 @@ while running:
             pygame.draw.rect(screen, RED, (screen_x - 4, screen_y - 4, 8, 8))
         else:
             pygame.draw.rect(screen, WHITE, (screen_x - 4, screen_y - 4, 8, 8))
+        for j in range(len(prioritized_cities)):
+            if points[i] == points[prioritized_cities[j]]:
+                pygame.draw.rect(screen, PINK, (screen_x - 4, screen_y - 4, 8, 8))
 
     for i in range(len(best_route) - 1):
         p1 = to_screen_coordinates(*points[best_route[i]])

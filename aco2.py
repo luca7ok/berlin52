@@ -3,8 +3,8 @@ import sys
 import pygame
 from rgb_gradient import get_linear_gradient
 import os
-import numpy as np
 from dotenv import load_dotenv
+import time
 
 pygame.init()
 pygame.font.init()
@@ -25,9 +25,13 @@ pygame.display.set_caption("Berlin 52 TABU Search")
 
 font = pygame.font.Font(None, 48)
 
+start_time = time.time()
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+PINK = (255, 20, 147)
+
 intermediate_colors = [(255, 0, 0), (255, 165, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (138, 43, 226)]
 gradient = get_linear_gradient(colors=intermediate_colors, nb_colors=52, return_format='rgb')
 
@@ -66,35 +70,57 @@ def generate_neighbors(route):
     return neighbours
 
 
-def simulated_annealing(initial_temperature, cooling_rate, max_iterations):
-    current_route = list(range(len(points)))
-    random.shuffle(current_route)
-    current_distance = total_distance(current_route)
+def ant_colony_optimization():
+    pheromones = [[1 for _ in range(len(points))] for _ in range(len(points))]
+    best_route = None
+    best_distance = float('inf')
 
-    best_route = current_route[:]
-    best_distance = current_distance
-    temperature = initial_temperature
+    for iteration in range(100):
+        all_routes = []
+        all_distances = []
 
-    for iteration in range(max_iterations):
-        i, j = random.sample(range(len(current_route)), 2)
-        neighbor_route = current_route[:]
-        neighbor_route[i], neighbor_route[j] = neighbor_route[j], neighbor_route[i]
+        for ant in range(30):
+            visited = [random.randint(0, len(points) - 1)]
+            while len(visited) < len(points):
+                current_city = visited[-1]
 
-        neighbor_distance = total_distance(neighbor_route)
-        delta_distance = neighbor_distance - current_distance
+                probabilities = []
+                for next_city in range(len(points)):
+                    if next_city in visited:
+                        probabilities.append(0)
+                    else:
+                        pheromone = pheromones[current_city][next_city]
+                        heuristic = 1 / (distance(points[current_city], points[next_city]))
+                        prob = pheromone * (heuristic ** 5)
+                        if next_city in prioritized_cities:
+                            prob *= 10
+                        probabilities.append(prob)
 
-        if delta_distance < 0 or random.random() < np.exp(-delta_distance / temperature):
-            current_route = neighbor_route[:]
-            current_distance = neighbor_distance
+                total_prob = sum(probabilities)
+                probabilities = [p / total_prob for p in probabilities]
+                next_city = random.choices(range(len(points)), probabilities)[0]
+                visited.append(next_city)
 
-            if current_distance < best_distance:
-                best_route = current_route[:]
-                best_distance = current_distance
+            route_distance = total_distance(visited)
+            all_routes.append(visited)
+            all_distances.append(route_distance)
 
-        temperature *= cooling_rate
+            if route_distance < best_distance:
+                best_distance = route_distance
+                best_route = visited
 
-        if temperature < 1e-8:
-            break
+        for i in range(len(points)):
+            for j in range(len(points)):
+                pheromones[i][j] *= 0.5
+
+        for route, dist in zip(all_routes, all_distances):
+            pheromone_deposit = 100 / dist
+            for i in range(len(route) - 1):
+                pheromones[route[i]][route[i + 1]] += pheromone_deposit
+                pheromones[route[i + 1]][route[i]] += pheromone_deposit
+
+            pheromones[route[-1]][route[0]] += pheromone_deposit
+            pheromones[route[0]][route[-1]] += pheromone_deposit
 
     return best_distance, best_route
 
@@ -106,7 +132,9 @@ def to_screen_coordinates(x, y):
 
 
 running = True
-best_distance, best_route = simulated_annealing(1000, 0.99, 10000)
+prioritized_cities = random.sample(range(0, 52), 4)
+best_distance, best_route = ant_colony_optimization()
+time_text = None
 
 while running:
     for event in pygame.event.get():
@@ -127,6 +155,9 @@ while running:
             pygame.draw.rect(screen, RED, (screen_x - 4, screen_y - 4, 8, 8))
         else:
             pygame.draw.rect(screen, WHITE, (screen_x - 4, screen_y - 4, 8, 8))
+        for j in range(len(prioritized_cities)):
+            if points[i] == points[prioritized_cities[j]]:
+                pygame.draw.rect(screen, PINK, (screen_x - 4, screen_y - 4, 8, 8))
 
     for i in range(len(best_route) - 1):
         p1 = to_screen_coordinates(*points[best_route[i]])
@@ -139,6 +170,10 @@ while running:
 
     distance_text = font.render(f'Distance: {round(best_distance, 2)}', False, WHITE)
     screen.blit(distance_text, (CHART_DISTANCE_X, CHART_DISTANCE_Y))
+
+    if time_text is None:
+        time_text = font.render(f'Time: {round(time.time() - start_time, 2)}', False, WHITE)
+    screen.blit(time_text, (CHART_DISTANCE_X + 300, CHART_DISTANCE_Y))
 
     pygame.display.flip()
 
